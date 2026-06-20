@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>opcodek</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:auto}
+html,body{width:100%;min-height:100%;overflow-x:hidden;background:#000;font-family:'Space Grotesk',sans-serif;color:#e0e0e0;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
+#splash{position:fixed;inset:0;background:#000;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:10000;cursor:pointer;transition:opacity 1.2s cubic-bezier(.4,0,.2,1)}
+#splash.out{opacity:0;pointer-events:none}
+#splash h1{font-size:clamp(2rem,6vw,3.5rem);font-weight:700;letter-spacing:.5em;text-transform:uppercase;color:#fff;margin-bottom:1.5rem;text-indent:.5em;transition:opacity .4s ease}
+#splash.out h1{opacity:0}
+.enter-text{font-size:.75rem;font-weight:300;letter-spacing:.35em;text-transform:uppercase;color:#444;animation:breathe 2.5s ease-in-out infinite;transition:opacity .4s ease}
+#splash.out .enter-text{opacity:0}
+@keyframes breathe{0%,100%{opacity:.3}50%{opacity:.8}}
+canvas#scene{position:fixed;inset:0;width:100%;height:100%;display:block;z-index:0}
+section{position:relative;z-index:10;min-height:100vh;display:flex;flex-direction:column;align-items:center;pointer-events:none}
+section *{pointer-events:auto}
+.hero{justify-content:space-between;padding:12vh 2rem 3rem}
+.hero-top{text-align:center;pointer-events:none;transition:opacity .1s linear}
+.name{font-size:clamp(1.6rem,4.5vw,2.8rem);font-weight:700;letter-spacing:.4em;text-transform:uppercase;color:#fff;text-indent:.4em;line-height:1.2}
+.tagline{font-size:clamp(.6rem,1.2vw,.8rem);font-weight:300;letter-spacing:.3em;text-transform:uppercase;color:#555;margin-top:.6rem}
+.hero-bottom{display:flex;flex-direction:column;align-items:center;gap:1.2rem;transition:opacity .1s linear}
+.divider{width:32px;height:1px;background:rgba(255,255,255,.08)}
+.socials{display:flex;gap:2.5rem;align-items:center}
+.social-link{display:flex;align-items:center;gap:.6rem;color:#666;text-decoration:none;font-size:.8rem;font-weight:400;letter-spacing:.06em;transition:color .3s ease}
+.social-link:hover{color:#fff}
+.social-link svg{width:16px;height:16px;fill:currentColor;transition:transform .3s ease}
+.social-link:hover svg{transform:translateY(-1px)}
+.langs{display:flex;flex-wrap:wrap;gap:.4rem 1rem;justify-content:center;max-width:400px}
+.lang{font-size:.7rem;font-weight:400;letter-spacing:.08em;color:#3a3a3a;transition:color .3s ease;cursor:default}
+.lang:hover{color:#aaa}
+.lang.primary{color:#8b0000}
+.scroll-hint{display:flex;flex-direction:column;align-items:center;gap:.5rem;padding-bottom:1.5rem;transition:opacity .3s ease;pointer-events:none}
+.scroll-line{width:1px;height:28px;background:linear-gradient(to bottom,transparent,#333);transform-origin:top;animation:scrollPulse 2.5s ease-in-out infinite}
+@keyframes scrollPulse{0%,100%{opacity:.1;transform:scaleY(.5)}50%{opacity:.7;transform:scaleY(1)}}
+.story{justify-content:center;padding:6vh 2rem 6rem}
+.story-inner{max-width:460px;width:100%;transition:opacity .1s linear}
+.story-box{width:100%;min-height:200px;padding:2rem;background:rgba(0,0,0,.35);border:1px solid rgba(255,255,255,.03);color:#555;font-size:.82rem;line-height:1.9;letter-spacing:.015em;outline:none;transition:border-color .4s ease;white-space:pre-wrap;word-wrap:break-word;overflow-y:auto;max-height:50vh}
+.story-box:focus{border-color:rgba(139,0,0,.25);color:#777}
+.story-box:empty::before{content:'...';color:#222;pointer-events:none}
+.story-box::-webkit-scrollbar{width:3px}
+.story-box::-webkit-scrollbar-track{background:transparent}
+.story-box::-webkit-scrollbar-thumb{background:rgba(255,255,255,.05);border-radius:2px}
+#now-playing{position:fixed;bottom:0;left:0;right:0;display:flex;align-items:center;justify-content:center;gap:.7rem;padding:.9rem 1rem;background:linear-gradient(transparent,rgba(0,0,0,.9));z-index:100;pointer-events:none}
+.eq{display:flex;align-items:flex-end;gap:2px;height:12px}
+.eq i{display:block;width:2px;background:#8b0000;border-radius:1px;height:2px;transition:height 60ms linear}
+.np-text{font-size:.6rem;font-weight:400;letter-spacing:.12em;color:#333;text-transform:uppercase}
+#vignette{position:fixed;inset:0;pointer-events:none;z-index:50;background:radial-gradient(ellipse at 50% 45%,transparent 30%,rgba(0,0,0,.75) 100%)}
+#grain{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:9999;opacity:.035;image-rendering:pixelated;mix-blend-mode:overlay}
+@media(max-width:640px){
+.hero{padding:10vh 1.5rem 2rem}
+.story{padding:4vh 1.5rem 5rem}
+.socials{gap:1.8rem}
+.langs{gap:.3rem .7rem;max-width:300px}
+.name{letter-spacing:.25em;text-indent:.25em}
+.story-inner{max-width:100%}
+.story-box{padding:1.5rem;min-height:160px;font-size:.78rem}
+}
+</style>
+</head>
+<body>
+
+<div id="splash">
+<h1>opcodek</h1>
+<p class="enter-text">click to enter</p>
+</div>
+
+<canvas id="scene"></canvas>
+
+<section class="hero" id="hero-section">
+<div class="hero-top" id="hero-top">
+<div class="name">opcodek</div>
+<div class="tagline">technologies</div>
+</div>
+<div class="hero-bottom" id="hero-bottom">
+<div class="divider"></div>
+<div class="socials">
+<a href="https://github.com/pymem" target="_blank" rel="noopener" class="social-link">
+<svg viewBox="0 0 24 24"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+<span>pymem</span>
+</a>
+<a href="javascript:void(0)" class="social-link" id="discord-copy">
+<svg viewBox="0 0 24 24"><path d="M20.317 4.3698a19.7913 19.7913 0 00-4.8851-1.5152.0741.0741 0 00-.0785.0371c-.211.3753-.4447.8648-.6083 1.2495-1.8447-.2762-3.68-.2762-5.4868 0-.1636-.3933-.4058-.8742-.6177-1.2495a.077.077 0 00-.0785-.037 19.7363 19.7363 0 00-4.8852 1.515.0699.0699 0 00-.0321.0277C.5334 9.0458-.319 13.5799.0992 18.0578a.0824.0824 0 00.0312.0561c2.0528 1.5076 4.0413 2.4228 5.9929 3.0294a.0777.0777 0 00.0842-.0276c.4616-.6304.8731-1.2952 1.226-1.9942a.076.076 0 00-.0416-.1057c-.6528-.2476-1.2743-.5495-1.8722-.8923a.077.077 0 01-.0076-.1277c.1258-.0943.2517-.1923.3718-.2914a.0743.0743 0 01.0776-.0105c3.9278 1.7933 8.18 1.7933 12.0614 0a.0739.0739 0 01.0785.0095c.1202.099.246.1981.3728.2924a.077.077 0 01-.0066.1276 12.2986 12.2986 0 01-1.873.8914.0766.0766 0 00-.0407.1067c.3604.698.7719 1.3628 1.225 1.9932a.076.076 0 00.0842.0286c1.961-.6067 3.9495-1.5219 6.0023-3.0294a.077.077 0 00.0313-.0552c.5004-5.177-.8382-9.6739-3.5485-13.6604a.061.061 0 00-.0312-.0286zM8.02 15.3312c-1.1825 0-2.1569-1.0857-2.1569-2.419 0-1.3332.9555-2.4189 2.157-2.4189 1.2108 0 2.1757 1.0952 2.1568 2.419 0 1.3332-.9555 2.4189-2.1569 2.4189zm7.9748 0c-1.1825 0-2.1569-1.0857-2.1569-2.419 0-1.3332.9555-2.4189 2.1569-2.4189 1.2108 0 2.1757 1.0952 2.1568 2.419 0 1.3332-.946 2.4189-2.1568 2.4189z"/></svg>
+<span>opcodek</span>
+</a>
+</div>
+<div class="divider"></div>
+<div class="langs">
+<span class="lang primary">python</span>
+<span class="lang">rust</span>
+<span class="lang">c++</span>
+<span class="lang">c</span>
+<span class="lang">c#</span>
+<span class="lang">zig</span>
+<span class="lang">js</span>
+<span class="lang">php</span>
+<span class="lang">html</span>
+<span class="lang">css</span>
+</div>
+</div>
+</section>
+
+<div id="vignette"></div>
+<canvas id="grain"></canvas>
+
+<div id="now-playing">
+<div class="eq"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+<span class="np-text">Spy Groove - Kevin MacLeod</span>
+</div>
+
+<audio id="audio" loop preload="auto">
+<source src="SpyGroove.mp3" type="audio/mpeg">
+</audio>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+<script type="module">
+import * as THREE from 'three';
+
+const splash = document.getElementById('splash');
+const heroTop = document.getElementById('hero-top');
+const heroBottom = document.getElementById('hero-bottom');
+const scrollHint = document.getElementById('scroll-hint');
+const storyInner = document.getElementById('story-inner');
+const audio = document.getElementById('audio');
+const grainCanvas = document.getElementById('grain');
+const grainCtx = grainCanvas.getContext('2d');
+const eqBars = document.querySelectorAll('.eq i');
+
+let mouseX = 0, mouseY = 0;
+let audioCtx, analyser, dataArray;
+let bassSmooth = 0;
+let frame = 0;
+let entered = false;
+let audioReady = false;
+let scrollProgress = 0;
+let smoothScroll = 0;
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x020202);
+scene.fog = new THREE.FogExp2(0x020202, 0.08);
+
+const camera = new THREE.PerspectiveCamera(40, window.innerWidth / window.innerHeight, 0.1, 100);
+camera.position.set(0, 2.0, 4.5);
+camera.lookAt(0, 0.3, 0);
+
+const renderer = new THREE.WebGLRenderer({
+  canvas: document.getElementById('scene'),
+  antialias: true,
+  alpha: false
+});
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 0.85;
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+
+function makePetal(w, h, bend, cup, waviness) {
+  const s = 24;
+  const pos = [];
+  const idx = [];
+  for (let j = 0; j <= s; j++) {
+    for (let i = 0; i <= s; i++) {
+      const u = (i / s) * 2 - 1;
+      const v = j / s;
+      const shape = Math.sin(v * Math.PI) * (1 - 0.25 * v * v);
+      const edgeWave = Math.sin(v * Math.PI * 3) * waviness * v;
+      const x = u * w * 0.5 * shape + edgeWave * u;
+      const y = v * h;
+      const z = bend * v * v + cup * u * u * v * 0.8;
+      pos.push(x, y, z);
+    }
+  }
+  for (let j = 0; j < s; j++) {
+    for (let i = 0; i < s; i++) {
+      const a = j * (s + 1) + i;
+      const b = a + 1;
+      const c = a + s + 1;
+      const d = c + 1;
+      idx.push(a, c, b, b, c, d);
+    }
+  }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+  g.setIndex(idx);
+  g.computeVertexNormals();
+  return g;
+}
+
+const petalMat = new THREE.MeshPhysicalMaterial({
+  color: 0x0a0a0a,
+  emissive: 0x150000,
+  emissiveIntensity: 0.5,
+  roughness: 0.45,
+  metalness: 0.0,
+  clearcoat: 0.6,
+  clearcoatRoughness: 0.3,
+  side: THREE.DoubleSide,
+  envMapIntensity: 0.5
+});
+
+const petalMat2 = new THREE.MeshPhysicalMaterial({
+  color: 0x080808,
+  emissive: 0x180000,
+  emissiveIntensity: 0.6,
+  roughness: 0.5,
+  metalness: 0.0,
+  clearcoat: 0.4,
+  clearcoatRoughness: 0.4,
+  side: THREE.DoubleSide,
+  envMapIntensity: 0.3
+});
+
+function buildRose(material) {
+  const group = new THREE.Group();
+  const layers = [
+    { n: 3,  w: 0.15, h: 0.4,  bend: 0.6,  cup: 0.22, tilt: 0.08, yOff: 0.2,  aOff: 0,    wave: 0.005 },
+    { n: 4,  w: 0.22, h: 0.55, bend: 0.45, cup: 0.18, tilt: 0.18, yOff: 0.15, aOff: 0.4,  wave: 0.008 },
+    { n: 5,  w: 0.3,  h: 0.7,  bend: 0.3,  cup: 0.14, tilt: 0.32, yOff: 0.1,  aOff: 0.15, wave: 0.012 },
+    { n: 7,  w: 0.4,  h: 0.9,  bend: 0.15, cup: 0.1,  tilt: 0.55, yOff: 0.05, aOff: 0.35, wave: 0.015 },
+    { n: 8,  w: 0.5,  h: 1.05, bend: 0.02, cup: 0.06, tilt: 0.78, yOff: 0,    aOff: 0.1,  wave: 0.018 },
+    { n: 10, w: 0.56, h: 1.2,  bend: -0.1, cup: 0.03, tilt: 1.0,  yOff: -0.03,aOff: 0.28, wave: 0.02 },
+    { n: 12, w: 0.6,  h: 1.35, bend: -0.22,cup: 0.015,tilt: 1.25, yOff: -0.06,aOff: 0.05, wave: 0.022 }
+  ];
+
+  layers.forEach(l => {
+    for (let i = 0; i < l.n; i++) {
+      const angle = (i / l.n) * Math.PI * 2 + l.aOff + (Math.random() - 0.5) * 0.1;
+      const pg = new THREE.Group();
+      pg.rotation.y = angle;
+      const geo = makePetal(l.w, l.h, l.bend, l.cup, l.wave);
+      const mesh = new THREE.Mesh(geo, material);
+      mesh.rotation.x = l.tilt + (Math.random() - 0.5) * 0.05;
+      mesh.position.y = l.yOff;
+      mesh.rotation.z = (Math.random() - 0.5) * 0.03;
+      pg.add(mesh);
+      group.add(pg);
+    }
+  });
+
+  const stemCurve = new THREE.CatmullRomCurve3([
+    new THREE.Vector3(0, -0.1, 0),
+    new THREE.Vector3(0.02, -0.5, 0.01),
+    new THREE.Vector3(-0.01, -1.0, -0.02),
+    new THREE.Vector3(0.03, -1.6, 0.01)
+  ]);
+  const stemGeo = new THREE.TubeGeometry(stemCurve, 20, 0.018, 8, false);
+  const stemMat = new THREE.MeshPhysicalMaterial({ color: 0x080808, roughness: 0.6, metalness: 0.0 });
+  const stem = new THREE.Mesh(stemGeo, stemMat);
+  stem.position.y = -0.5;
+  group.add(stem);
+
+  const thornGeo = new THREE.ConeGeometry(0.02, 0.08, 6);
+  const thornMat = new THREE.MeshPhysicalMaterial({ color: 0x0c0c0c, roughness: 0.5 });
+  [0.3, 0.6, 0.9, 1.2].forEach((t, i) => {
+    const pt = stemCurve.getPoint(t / 1.6);
+    const thorn = new THREE.Mesh(thornGeo, thornMat);
+    thorn.position.set(pt.x * 1.5, pt.y - 0.5, pt.z * 1.5);
+    thorn.rotation.z = (i % 2 === 0 ? 1 : -1) * 1.2;
+    thorn.rotation.y = i * 1.5;
+    group.add(thorn);
+  });
+
+  const baseGeo = new THREE.SphereGeometry(0.1, 16, 8, 0, Math.PI * 2, 0, Math.PI * 0.5);
+  const baseMesh = new THREE.Mesh(baseGeo, material);
+  baseMesh.position.y = -0.08;
+  group.add(baseMesh);
+
+  return group;
+}
+
+const roseParent = new THREE.Group();
+const roseGroup = buildRose(petalMat);
+roseGroup.position.y = -0.6;
+roseParent.add(roseGroup);
+
+const rose2Group = buildRose(petalMat2);
+rose2Group.position.set(1.4, -3.2, 0.4);
+rose2Group.rotation.set(0.2, 0.8, 1.3);
+rose2Group.scale.setScalar(1.15);
+roseParent.add(rose2Group);
+
+const fallenPetals = new THREE.Group();
+for (let i = 0; i < 6; i++) {
+  const geo = makePetal(0.3 + Math.random() * 0.25, 0.6 + Math.random() * 0.4, -0.3 - Math.random() * 0.2, 0.08, 0.03);
+  const mesh = new THREE.Mesh(geo, petalMat2);
+  mesh.position.set(
+    -1.5 + Math.random() * 3,
+    -3.8 - Math.random() * 0.8,
+    -0.5 + Math.random() * 1
+  );
+  mesh.rotation.set(Math.random() * Math.PI, Math.random() * Math.PI, Math.random() * Math.PI);
+  fallenPetals.add(mesh);
+}
+roseParent.add(fallenPetals);
+
+scene.add(roseParent);
+
+const keyLight = new THREE.DirectionalLight(0xffeedd, 1.5);
+keyLight.position.set(3, 5, 2);
+scene.add(keyLight);
+
+const fillLight = new THREE.DirectionalLight(0x6666aa, 0.2);
+fillLight.position.set(-4, 2, -1);
+scene.add(fillLight);
+
+const rimLight = new THREE.DirectionalLight(0xbb0000, 0.7);
+rimLight.position.set(-1, 1.5, -3);
+scene.add(rimLight);
+
+const bottomLight = new THREE.PointLight(0x440000, 1.0, 6);
+bottomLight.position.set(0, -2, 0);
+scene.add(bottomLight);
+
+const redPoint = new THREE.PointLight(0xff0022, 0.3, 5);
+redPoint.position.set(0.8, 0.6, 0.8);
+scene.add(redPoint);
+
+const redPoint2 = new THREE.PointLight(0xff0022, 0.25, 5);
+redPoint2.position.set(1.5, -3.0, 1.0);
+scene.add(redPoint2);
+
+const backGlow = new THREE.PointLight(0x220000, 0.6, 8);
+backGlow.position.set(0, 0, -2);
+scene.add(backGlow);
+
+scene.add(new THREE.AmbientLight(0x080808));
+
+const particleCount = 180;
+const particlePositions = new Float32Array(particleCount * 3);
+const particleSpeeds = new Float32Array(particleCount);
+const particleSizes = new Float32Array(particleCount);
+
+for (let i = 0; i < particleCount; i++) {
+  particlePositions[i * 3] = (Math.random() - 0.5) * 12;
+  particlePositions[i * 3 + 1] = Math.random() * 10 - 5;
+  particlePositions[i * 3 + 2] = (Math.random() - 0.5) * 12;
+  particleSpeeds[i] = 0.0008 + Math.random() * 0.003;
+  particleSizes[i] = 0.006 + Math.random() * 0.018;
+}
+
+const particleGeo = new THREE.BufferGeometry();
+particleGeo.setAttribute('position', new THREE.BufferAttribute(particlePositions, 3));
+particleGeo.setAttribute('aSize', new THREE.BufferAttribute(particleSizes, 1));
+
+const particleMat = new THREE.ShaderMaterial({
+  transparent: true,
+  depthWrite: false,
+  uniforms: {
+    uBass: { value: 0 }
+  },
+  vertexShader: `
+    attribute float aSize;
+    varying float vAlpha;
+    uniform float uBass;
+    void main() {
+      vec4 mvPos = modelViewMatrix * vec4(position, 1.0);
+      gl_PointSize = aSize * (220.0 / -mvPos.z) * (1.0 + uBass * 0.6);
+      gl_Position = projectionMatrix * mvPos;
+      vAlpha = smoothstep(8.0, 0.5, length(position.xz)) * 0.3;
+    }
+  `,
+  fragmentShader: `
+    varying float vAlpha;
+    void main() {
+      float d = length(gl_PointCoord - 0.5) * 2.0;
+      float a = smoothstep(1.0, 0.2, d) * vAlpha;
+      gl_FragColor = vec4(0.65, 0.65, 0.65, a);
+    }
+  `
+});
+
+const particles = new THREE.Points(particleGeo, particleMat);
+scene.add(particles);
+
+grainCanvas.width = Math.floor(window.innerWidth / 3);
+grainCanvas.height = Math.floor(window.innerHeight / 3);
+
+function updateGrain() {
+  const w = grainCanvas.width;
+  const h = grainCanvas.height;
+  const imgData = grainCtx.createImageData(w, h);
+  const d = imgData.data;
+  for (let i = 0; i < d.length; i += 4) {
+    const v = Math.random() * 255;
+    d[i] = v;
+    d[i + 1] = v;
+    d[i + 2] = v;
+    d[i + 3] = 255;
+  }
+  grainCtx.putImageData(imgData, 0, 0);
+}
+
+function lerp(a, b, t) {
+  return a + (b - a) * t;
+}
+
+function smoothstep(edge0, edge1, x) {
+  const t = Math.max(0, Math.min(1, (x - edge0) / (edge1 - edge0)));
+  return t * t * (3 - 2 * t);
+}
+
+function initAudio() {
+  if (audioReady) return;
+  audioReady = true;
+  audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  analyser = audioCtx.createAnalyser();
+  const source = audioCtx.createMediaElementSource(audio);
+  source.connect(analyser);
+  analyser.connect(audioCtx.destination);
+  analyser.fftSize = 128;
+  dataArray = new Uint8Array(analyser.frequencyBinCount);
+}
+
+function enter() {
+  if (entered) return;
+  entered = true;
+  window.scrollTo(0, 0);
+  splash.classList.add('out');
+  initAudio();
+  audio.volume = 0;
+  audio.play().then(() => {
+    audioCtx.resume();
+    let vol = 0;
+    const fadeInt = setInterval(() => {
+      vol += 0.015;
+      if (vol >= 0.65) {
+        vol = 0.65;
+        clearInterval(fadeInt);
+      }
+      audio.volume = vol;
+    }, 30);
+  }).catch(() => {});
+  setTimeout(() => { splash.style.display = 'none'; }, 1500);
+}
+
+splash.addEventListener('click', enter);
+
+document.addEventListener('mousemove', e => {
+  mouseX = (e.clientX / window.innerWidth - 0.5) * 2;
+  mouseY = (e.clientY / window.innerHeight - 0.5) * 2;
+});
+
+document.getElementById('discord-copy').addEventListener('click', () => {
+  navigator.clipboard.writeText('opcodek').catch(() => {});
+});
+
+window.addEventListener('scroll', () => {
+  const maxScroll = document.documentElement.scrollHeight - window.innerHeight;
+  scrollProgress = maxScroll > 0 ? window.scrollY / maxScroll : 0;
+}, { passive: true });
+
+const camState = {
+  posX: 0, posY: 2.0, posZ: 4.5,
+  lookX: 0, lookY: 0.3
+};
+const lookTarget = new THREE.Vector3(0, 0.3, 0);
+
+function animate() {
+  requestAnimationFrame(animate);
+  frame++;
+
+  if (frame % 3 === 0) updateGrain();
+
+  smoothScroll += (scrollProgress - smoothScroll) * 0.06;
+
+  const heroOpacity = 1 - smoothstep(0, 0.35, smoothScroll);
+  const storyOpacity = smoothstep(0.25, 0.55, smoothScroll);
+  const hintOpacity = 1 - smoothstep(0, 0.08, smoothScroll);
+
+  heroTop.style.opacity = heroOpacity;
+  heroBottom.style.opacity = heroOpacity;
+  scrollHint.style.opacity = hintOpacity;
+  storyInner.style.opacity = storyOpacity;
+
+  if (entered && analyser && dataArray) {
+    analyser.getByteFrequencyData(dataArray);
+    let sum = 0;
+    for (let i = 0; i < 8; i++) sum += dataArray[i];
+    const bass = sum / (8 * 255);
+    bassSmooth += (bass - bassSmooth) * 0.12;
+
+    for (let i = 0; i < eqBars.length; i++) {
+      const idx = Math.floor((i / eqBars.length) * dataArray.length);
+      const val = dataArray[idx] / 255;
+      eqBars[i].style.height = Math.max(2, val * 14) + 'px';
+    }
+
+    particleMat.uniforms.uBass.value = bassSmooth;
+    const s = 1 + bassSmooth * 0.035;
+    roseGroup.scale.set(s, s, s);
+  }
+
+  const tCamY = lerp(2.0, -1.2, smoothScroll);
+  const tCamX = lerp(0, -0.4, smoothScroll);
+  const tCamZ = lerp(4.5, 3.8, smoothScroll);
+  const tLookX = lerp(0, 0.3, smoothScroll);
+  const tLookY = lerp(0.3, -2.2, smoothScroll);
+
+  camState.posX += (tCamX - camState.posX) * 0.04;
+  camState.posY += (tCamY - camState.posY) * 0.04;
+  camState.posZ += (tCamZ - camState.posZ) * 0.04;
+  camState.lookX += (tLookX - camState.lookX) * 0.04;
+  camState.lookY += (tLookY - camState.lookY) * 0.04;
+
+  camera.position.set(camState.posX, camState.posY, camState.posZ);
+  lookTarget.set(camState.lookX, camState.lookY, 0);
+  camera.lookAt(lookTarget);
+
+  roseGroup.rotation.y += 0.0008;
+
+  const mouseInfluence = 1 - smoothScroll * 0.5;
+  roseParent.rotation.y += (mouseX * 0.18 * mouseInfluence - roseParent.rotation.y) * 0.015;
+  roseParent.rotation.x += (mouseY * -0.08 * mouseInfluence - roseParent.rotation.x) * 0.015;
+
+  const pPos = particles.geometry.attributes.position.array;
+  for (let i = 0; i < particleCount; i++) {
+    const speed = particleSpeeds[i] * (1 + (entered ? bassSmooth * 2.5 : 0));
+    pPos[i * 3 + 1] += speed;
+    pPos[i * 3] += Math.sin(frame * 0.001 + i * 0.5) * 0.0004;
+    pPos[i * 3 + 2] += Math.cos(frame * 0.0015 + i * 0.3) * 0.0002;
+    if (pPos[i * 3 + 1] > 7) {
+      pPos[i * 3 + 1] = -5;
+      pPos[i * 3] = (Math.random() - 0.5) * 12;
+      pPos[i * 3 + 2] = (Math.random() - 0.5) * 12;
+    }
+  }
+  particles.geometry.attributes.position.needsUpdate = true;
+
+  redPoint.intensity = 0.3 + Math.sin(frame * 0.008) * 0.1 + (entered ? bassSmooth * 0.5 : 0);
+  redPoint2.intensity = 0.2 + Math.sin(frame * 0.006 + 2) * 0.08 + (entered ? bassSmooth * 0.4 : 0);
+  backGlow.intensity = 0.5 + (entered ? bassSmooth * 0.3 : 0);
+
+  renderer.render(scene, camera);
+}
+
+animate();
+
+window.addEventListener('resize', () => {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  grainCanvas.width = Math.floor(window.innerWidth / 3);
+  grainCanvas.height = Math.floor(window.innerHeight / 3);
+});
+</script>
+</body>
+</html>
